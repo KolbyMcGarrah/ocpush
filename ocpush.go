@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 )
@@ -20,19 +21,21 @@ type PushExporter struct {
 	views     []*view.View
 	pushAddr  string
 	pushPort  string
+	isTest    bool
 }
 
 // NewPushExporter creates a new PushExporter and starts the Meter
 // so that it can collect metrics
 // JobName defines the name that will be associated with the metrics
 // in push gateway
-func NewPushExporter(namespace, pushAddr, pushPort, jobName string) *PushExporter {
+func NewPushExporter(isTest bool, namespace, pushAddr, pushPort, jobName string) *PushExporter {
 	var pe = &PushExporter{
 		Meter:     view.NewMeter(),
 		namespace: namespace,
 		pushAddr:  pushAddr,
 		pushPort:  pushPort,
 		jobName:   jobName,
+		isTest:    isTest,
 	}
 	pe.Meter.Start()
 	return pe
@@ -56,7 +59,7 @@ func (pe *PushExporter) RegisterViews(views ...*view.View) error {
 // Record records the measurement to the Meter so that it can be exported
 // Tags will be grabbed from the context
 // The second argument is a `[]Measurement`.
-func (pe *PushExporter) Record(ctx context.Context, measurement interface{}, attachments map[string]interface{}) {
+func (pe *PushExporter) Record(ctx context.Context, measurement []stats.Measurement, attachments map[string]interface{}) {
 	pe.Meter.Record(tag.FromContext(ctx), measurement, attachments)
 }
 
@@ -73,17 +76,23 @@ func (pe *PushExporter) PushMetrics() {
 		metricName := fmt.Sprint(pe.namespace, "_", view.Name)
 		helpString := fmt.Sprint("#HELP ", metricName, " ", view.Description, "\n")
 		typeString := fmt.Sprint("#TYPE ", metricName, " ", getType(view.Aggregation.Type), "\n")
+		reqData := fmt.Sprint(helpString, typeString)
 		for _, row := range rows {
-			reqData := fmt.Sprint(helpString, typeString, metricName, formatRowData(row, view), "\n")
-			req, err := http.NewRequest(http.MethodPost, pe.buildURLString(), bytes.NewBuffer([]byte(reqData)))
-			if err != nil {
-				continue
-			}
-			req.Header.Set("Content-Type", "plain/text; charset=utf-8")
-			_, err = client.Do(req)
-			if err != nil {
-				continue
-			}
+			reqData = fmt.Sprint(reqData, metricName, formatRowData(row, view), "\n")
+		}
+		fmt.Println(reqData)
+		if pe.isTest {
+			fmt.Print(reqData)
+			continue
+		}
+		req, err := http.NewRequest(http.MethodPost, pe.buildURLString(), bytes.NewBuffer([]byte(reqData)))
+		if err != nil {
+			continue
+		}
+		req.Header.Set("Content-Type", "plain/text; charset=utf-8")
+		_, err = client.Do(req)
+		if err != nil {
+			continue
 		}
 
 	}
@@ -141,28 +150,3 @@ func getType(aggType view.AggType) string {
 	}
 	return returnType
 }
-
-// The below was used for testing purposes without actually writing tests yet.
-// Note that the package name must change to main and you will need a local
-// instance of pushgateway running for the test to work.
-
-// func main() {
-// 	exporter := NewPushExporter("demo", "http://localhost", ":9091", "myJob")
-// 	exporter.SetInstance("thebest")
-// 	exporter.RegisterViews(loopCountView)
-// 	for i := int64(0); i < 5; i++ {
-// 		ctx, _ := tag.New(context.Background(), tag.Upsert(keyMethod, "main"))
-// 		exporter.Record(ctx, []stats.Measurement{mLoops.M(1)}, nil)
-// 	}
-// 	exporter.PushMetrics()
-// }
-
-// // The measure and view to be used for demo purposes
-// var keyMethod, _ = tag.NewKey("method")
-// var mLoops = stats.Int64("demo", "The number of loop iterations", "1")
-// var loopCountView = &view.View{
-// 	Measure: mLoops, Name: "demo",
-// 	Description: "Number of loop iterations",
-// 	Aggregation: view.Count(),
-// 	TagKeys:     []tag.Key{keyMethod},
-// }
