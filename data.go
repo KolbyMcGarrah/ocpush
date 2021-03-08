@@ -35,7 +35,6 @@ type value struct {
 
 func buildRequest(rows []*view.Row, v *view.View) *ViewData {
 	var reqMetric metric
-
 	request := &ViewData{
 		BaseLabels: baseLabel{
 			Name: v.Name,
@@ -57,6 +56,14 @@ func buildRequest(rows []*view.Row, v *view.View) *ViewData {
 	request.Metric = reqMetric
 
 	return request
+}
+
+// PrintRequest prints the name and metrics of the request
+func (r RequestData) PrintRequest() {
+	for _, view := range r.Views {
+		fmt.Println("Name:", view.BaseLabels.Name)
+		fmt.Println("Metrics:", view.Metric)
+	}
 }
 
 func getLabels(tags []tag.Tag) map[string]string {
