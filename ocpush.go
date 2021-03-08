@@ -76,7 +76,7 @@ func (pe *PushExporter) PushMetrics() {
 		reqData := fmt.Sprint(helpString, typeString)
 		rows, err := pe.Meter.RetrieveData(view.Name)
 		for _, row := range rows {
-			reqData = fmt.Sprint(reqData, metricName, formatRowData(row, view), "\n")
+			reqData = fmt.Sprint(reqData, metricName, formatRowData(metricName, row, view), "\n")
 			if err != nil || len(rows) < 1 {
 				continue
 			}
@@ -109,7 +109,7 @@ func (pe *PushExporter) buildURLString() string {
 	return url
 }
 
-func formatRowData(row *view.Row, v *view.View) string {
+func formatRowData(metricName string, row *view.Row, v *view.View) string {
 	var formattedData = "{"
 	for i, tag := range row.Tags {
 		if i == 0 {
@@ -132,7 +132,7 @@ func formatRowData(row *view.Row, v *view.View) string {
 			if i == 0 {
 				formattedData = fmt.Sprint(formattedData, ", quantile=", fmt.Sprintf("%f }", bucket), row.Data.(*view.DistributionData).CountPerBucket[i], "\n")
 			} else {
-				formattedData = fmt.Sprint(formattedData, rowData, ", quantile=", fmt.Sprintf("%f }", bucket), row.Data.(*view.DistributionData).CountPerBucket[i], "\n")
+				formattedData = fmt.Sprint(metricName, formattedData, rowData, ", quantile=", fmt.Sprintf("%f }", bucket), row.Data.(*view.DistributionData).CountPerBucket[i], "\n")
 			}
 		}
 	default:
