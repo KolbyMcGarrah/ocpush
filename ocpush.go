@@ -127,8 +127,13 @@ func formatRowData(row *view.Row, v *view.View) string {
 		formattedData = fmt.Sprint(formattedData, "} ", row.Data.(*view.LastValueData).Value)
 	// TODO Set up bucket distributions
 	case view.AggTypeDistribution:
+		rowData := formattedData
 		for i, bucket := range v.Aggregation.Buckets {
-			formattedData = fmt.Sprint(formattedData, ", quantile=", fmt.Sprintf("%f }", bucket), row.Data.(*view.DistributionData).CountPerBucket[i], "\n")
+			if i == 0 {
+				formattedData = fmt.Sprint(formattedData, ", quantile=", fmt.Sprintf("%f }", bucket), row.Data.(*view.DistributionData).CountPerBucket[i], "\n")
+			} else {
+				formattedData = fmt.Sprint(formattedData, rowData, ", quantile=", fmt.Sprintf("%f }", bucket), row.Data.(*view.DistributionData).CountPerBucket[i], "\n")
+			}
 		}
 	default:
 		formattedData = fmt.Sprint(formattedData, "} ")
