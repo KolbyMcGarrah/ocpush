@@ -88,7 +88,9 @@ func (pe *PushExporter) PushMetrics() {
 	req, err := http.NewRequest(http.MethodPost, pe.buildURLString(), bytes.NewBuffer([]byte(jsonRequest)))
 	if err != nil {
 	}
-	req.Header.Set("Content-Type", `application/json; schema=”prometheus/telemetry”; version=”0.0.2`)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("schema", "prometheus/telemetry")
+	req.Header.Set("version", "0.0.2")
 	resp, err := client.Do(req)
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
