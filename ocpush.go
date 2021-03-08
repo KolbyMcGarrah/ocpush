@@ -135,6 +135,8 @@ func formatRowData(metricName string, row *view.Row, v *view.View) string {
 				formattedData = fmt.Sprint(formattedData, metricName, rowData, ", quantile=", fmt.Sprintf(`"%f"}`, bucket), row.Data.(*view.DistributionData).CountPerBucket[i], "\n")
 			}
 		}
+		formattedData = fmt.Sprint(formattedData, metricName, "_sum ", row.Data.(*view.DistributionData).Sum(), "\n")
+		formattedData = fmt.Sprint(formattedData, metricName, "count ", row.Data.(*view.DistributionData).Count, "\n")
 	default:
 		formattedData = fmt.Sprint(formattedData, "} ")
 	}
