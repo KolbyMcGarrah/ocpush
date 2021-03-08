@@ -33,11 +33,11 @@ type value struct {
 	Value interface{}       `json:"value"`
 }
 
-func buildRequest(rows []*view.Row, v *view.View) *ViewData {
+func buildRequest(rows []*view.Row, v *view.View, namespace string) *ViewData {
 	var reqMetric metric
 	request := &ViewData{
 		BaseLabels: baseLabel{
-			Name: v.Name,
+			Name: fmt.Sprint(namespace, "_", v.Name),
 		},
 		Docstring: v.Description,
 	}

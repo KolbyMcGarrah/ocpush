@@ -76,7 +76,7 @@ func (pe *PushExporter) PushMetrics() {
 		if err != nil || len(rows) < 1 {
 			continue
 		}
-		reqData.Views = append(reqData.Views, buildRequest(rows, view))
+		reqData.Views = append(reqData.Views, buildRequest(rows, view, pe.instance))
 	}
 	reqData.PrintRequest()
 	jsonRequest, err := json.Marshal(reqData.Views)
