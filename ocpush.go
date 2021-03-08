@@ -75,15 +75,15 @@ func (pe *PushExporter) PushMetrics() {
 			continue
 		}
 		reqData := buildRequest(rows, view)
+		fmt.Println(reqData)
 		jsonRequest, err := json.Marshal(reqData)
 		if err != nil {
 			continue
 		}
 		if pe.isTest {
-			fmt.Print(jsonRequest)
+			fmt.Print(reqData)
 			continue
 		}
-		fmt.Println(jsonRequest)
 		req, err := http.NewRequest(http.MethodPost, pe.buildURLString(), bytes.NewBuffer([]byte(jsonRequest)))
 		if err != nil {
 			continue
@@ -107,32 +107,6 @@ func (pe *PushExporter) buildURLString() string {
 		url = fmt.Sprintf("%s/instance/%s", url, pe.instance)
 	}
 	return url
-}
-
-func formatRowData(row *view.Row, v *view.View) string {
-	var formattedData = "{"
-	for i, tag := range row.Tags {
-		if i == 0 {
-			formattedData = fmt.Sprint(formattedData, tag.Key.Name(), `="`, tag.Value, `"`)
-			continue
-		}
-		formattedData = fmt.Sprint(formattedData, ",", tag.Key.Name(), `="`, tag.Value, `"`)
-	}
-	switch v.Aggregation.Type {
-	case view.AggTypeCount:
-		formattedData = fmt.Sprint(formattedData, "} ", row.Data.(*view.CountData).Value)
-	case view.AggTypeSum:
-		formattedData = fmt.Sprint(formattedData, "} ", row.Data.(*view.SumData).Value)
-	case view.AggTypeLastValue:
-		formattedData = fmt.Sprint(formattedData, "} ", row.Data.(*view.LastValueData).Value)
-	// TODO Set up bucket distributions
-	case view.AggTypeDistribution:
-		formattedData = fmt.Sprint(formattedData, "} ", row.Data.(*view.DistributionData).Count)
-	default:
-		formattedData = fmt.Sprint(formattedData, "} ")
-	}
-
-	return formattedData
 }
 
 func getType(aggType view.AggType) string {
