@@ -77,12 +77,12 @@ func (pe *PushExporter) PushMetrics() {
 		}
 		reqData.Views = append(reqData.Views, buildRequest(rows, view))
 	}
-	fmt.Println(reqData)
+	fmt.Println(reqData.Views)
 	jsonRequest, err := json.Marshal(reqData.Views)
 	if err != nil {
 	}
 	if pe.isTest {
-		fmt.Print(reqData)
+		fmt.Print(reqData.Views)
 	}
 	req, err := http.NewRequest(http.MethodPost, pe.buildURLString(), bytes.NewBuffer([]byte(jsonRequest)))
 	if err != nil {
