@@ -88,7 +88,8 @@ func (pe *PushExporter) PushMetrics() {
 	if err != nil {
 	}
 	req.Header.Set("Content-Type", `application/json; schema=”prometheus/telemetry”; version=”0.0.2`)
-	_, err = client.Do(req)
+	resp, err := client.Do(req)
+	fmt.Println(resp)
 	if err != nil {
 	}
 }
