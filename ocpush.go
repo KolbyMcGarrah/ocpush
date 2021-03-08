@@ -67,6 +67,7 @@ func (pe *PushExporter) Record(ctx context.Context, measurement []stats.Measurem
 // PushMetrics extracts all of the data from the views and pushes them to the pushgateway
 // Errors are being returned on a channel in case we encounter multiple
 func (pe *PushExporter) PushMetrics() {
+	var reqData RequestData
 	client := &http.Client{}
 	// push metrics for each view registered to the Meter
 	for _, view := range pe.views {
@@ -74,26 +75,21 @@ func (pe *PushExporter) PushMetrics() {
 		if err != nil || len(rows) < 1 {
 			continue
 		}
-		reqData := buildRequest(rows, view)
-		fmt.Println(reqData)
-		jsonRequest, err := json.Marshal(reqData)
-		if err != nil {
-			continue
-		}
-		if pe.isTest {
-			fmt.Print(reqData)
-			continue
-		}
-		req, err := http.NewRequest(http.MethodPost, pe.buildURLString(), bytes.NewBuffer([]byte(jsonRequest)))
-		if err != nil {
-			continue
-		}
-		req.Header.Set("Content-Type", `application/json; schema=”prometheus/telemetry”; version=”0.0.2`)
-		_, err = client.Do(req)
-		if err != nil {
-			continue
-		}
-
+		reqData.Views = append(reqData.Views, buildRequest(rows, view))
+	}
+	fmt.Println(reqData)
+	jsonRequest, err := json.Marshal(reqData)
+	if err != nil {
+	}
+	if pe.isTest {
+		fmt.Print(reqData)
+	}
+	req, err := http.NewRequest(http.MethodPost, pe.buildURLString(), bytes.NewBuffer([]byte(jsonRequest)))
+	if err != nil {
+	}
+	req.Header.Set("Content-Type", `application/json; schema=”prometheus/telemetry”; version=”0.0.2`)
+	_, err = client.Do(req)
+	if err != nil {
 	}
 }
 

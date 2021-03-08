@@ -7,8 +7,13 @@ import (
 	"go.opencensus.io/tag"
 )
 
-// RequestData represents the data format required for push gateway: https://docs.google.com/document/d/1ZjyKiKxZV83VI9ZKAXRGKaUKK2BIWCT7oiGBKDBpjEY/edit#
+// RequestData holds all of the view data for the registered views
 type RequestData struct {
+	Views []*ViewData
+}
+
+// ViewData represents the data format required for push gateway: https://docs.google.com/document/d/1ZjyKiKxZV83VI9ZKAXRGKaUKK2BIWCT7oiGBKDBpjEY/edit#
+type ViewData struct {
 	BaseLabels baseLabel `json:"baseLabels"`
 	Docstring  string    `json:"docstring"`
 	Metric     metric    `json:"metric"`
@@ -28,10 +33,10 @@ type value struct {
 	Value interface{}       `json:"value"`
 }
 
-func buildRequest(rows []*view.Row, v *view.View) *RequestData {
+func buildRequest(rows []*view.Row, v *view.View) *ViewData {
 	var reqMetric metric
 
-	request := &RequestData{
+	request := &ViewData{
 		BaseLabels: baseLabel{
 			Name: v.Name,
 		},
