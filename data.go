@@ -20,7 +20,7 @@ type ViewData struct {
 }
 
 type baseLabel struct {
-	Name string `json:"__name__"`
+	Name string `json:"name"`
 }
 
 type metric struct {
