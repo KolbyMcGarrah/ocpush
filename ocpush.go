@@ -70,6 +70,7 @@ func (pe *PushExporter) PushMetrics() {
 	// push metrics for each view registered to the Meter
 	for _, view := range pe.views {
 		rows, err := pe.Meter.RetrieveData(view.Name)
+		fmt.Println(rows)
 		if err != nil || len(rows) < 1 {
 			continue
 		}
@@ -145,6 +146,8 @@ func getType(aggType view.AggType) string {
 		returnType = "summary"
 	case view.AggTypeLastValue:
 		returnType = "gauge"
+	case view.AggTypeDistribution:
+		returnType = "histogram"
 	default:
 		returnType = "untyped"
 	}
