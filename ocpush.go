@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"go.opencensus.io/stats"
@@ -89,9 +90,12 @@ func (pe *PushExporter) PushMetrics() {
 	}
 	req.Header.Set("Content-Type", `application/json; schema=”prometheus/telemetry”; version=”0.0.2`)
 	resp, err := client.Do(req)
-	fmt.Println(resp)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		fmt.Println(err)
 	}
+	bodyString := string(bodyBytes)
+	fmt.Println(bodyString)
 }
 
 func (pe *PushExporter) buildURLString() string {
