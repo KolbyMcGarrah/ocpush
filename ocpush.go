@@ -3,7 +3,6 @@ package ocpush
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -68,36 +67,34 @@ func (pe *PushExporter) Record(ctx context.Context, measurement []stats.Measurem
 // PushMetrics extracts all of the data from the views and pushes them to the pushgateway
 // Errors are being returned on a channel in case we encounter multiple
 func (pe *PushExporter) PushMetrics() {
-	var reqData RequestData
 	client := &http.Client{}
 	// push metrics for each view registered to the Meter
 	for _, view := range pe.views {
+		metricName := fmt.Sprint(pe.namespace, "_", view.Name)
+		helpString := fmt.Sprint("#HELP ", metricName, " ", view.Description, "\n")
+		typeString := fmt.Sprint("#TYPE ", metricName, " ", getType(view.Aggregation.Type), "\n")
+		reqData := fmt.Sprint(helpString, typeString)
 		rows, err := pe.Meter.RetrieveData(view.Name)
-		if err != nil || len(rows) < 1 {
-			continue
+		for _, row := range rows {
+			reqData = fmt.Sprint(reqData, metricName, formatRowData(row, view), "\n")
+			if err != nil || len(rows) < 1 {
+				continue
+			}
+
 		}
-		reqData.Views = append(reqData.Views, buildRequest(rows, view, pe.instance))
+		fmt.Println(reqData)
+		req, err := http.NewRequest(http.MethodPost, pe.buildURLString(), bytes.NewBuffer([]byte(reqData)))
+		if err != nil {
+		}
+		req.Header.Set("Content-Type", "plain/text; charset=utf-8")
+		resp, err := client.Do(req)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println(err)
+		}
+		bodyString := string(bodyBytes)
+		fmt.Println(bodyString)
 	}
-	reqData.PrintRequest()
-	jsonRequest, err := json.Marshal(reqData.Views)
-	if err != nil {
-	}
-	if pe.isTest {
-		fmt.Print(reqData.Views)
-	}
-	req, err := http.NewRequest(http.MethodPost, pe.buildURLString(), bytes.NewBuffer([]byte(jsonRequest)))
-	if err != nil {
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("schema", "prometheus/telemetry")
-	req.Header.Set("version", "0.0.2")
-	resp, err := client.Do(req)
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println(err)
-	}
-	bodyString := string(bodyBytes)
-	fmt.Println(bodyString)
 }
 
 func (pe *PushExporter) buildURLString() string {
@@ -110,6 +107,34 @@ func (pe *PushExporter) buildURLString() string {
 		url = fmt.Sprintf("%s/instance/%s", url, pe.instance)
 	}
 	return url
+}
+
+func formatRowData(row *view.Row, v *view.View) string {
+	var formattedData = "{"
+	for i, tag := range row.Tags {
+		if i == 0 {
+			formattedData = fmt.Sprint(formattedData, tag.Key.Name(), `="`, tag.Value, `"`)
+			continue
+		}
+		formattedData = fmt.Sprint(formattedData, ",", tag.Key.Name(), `="`, tag.Value, `"`)
+	}
+	switch v.Aggregation.Type {
+	case view.AggTypeCount:
+		formattedData = fmt.Sprint(formattedData, "} ", row.Data.(*view.CountData).Value)
+	case view.AggTypeSum:
+		formattedData = fmt.Sprint(formattedData, "} ", row.Data.(*view.SumData).Value)
+	case view.AggTypeLastValue:
+		formattedData = fmt.Sprint(formattedData, "} ", row.Data.(*view.LastValueData).Value)
+	// TODO Set up bucket distributions
+	case view.AggTypeDistribution:
+		for i, bucket := range v.Aggregation.Buckets {
+			formattedData = fmt.Sprint(formattedData, ", quantile=", fmt.Sprintf("%f }", bucket), row.Data.(*view.DistributionData).CountPerBucket[i], "\n")
+		}
+	default:
+		formattedData = fmt.Sprint(formattedData, "} ")
+	}
+
+	return formattedData
 }
 
 func getType(aggType view.AggType) string {
