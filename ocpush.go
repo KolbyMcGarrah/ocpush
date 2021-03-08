@@ -130,7 +130,7 @@ func formatRowData(metricName string, row *view.Row, v *view.View) string {
 		rowData := formattedData
 		for i, bucket := range v.Aggregation.Buckets {
 			if i == 0 {
-				formattedData = fmt.Sprint(formattedData, ", quantile=", fmt.Sprintf("%f }", bucket), row.Data.(*view.DistributionData).CountPerBucket[i], "\n")
+				formattedData = fmt.Sprint(formattedData, ", quantile=", fmt.Sprintf(`"%f"}`, bucket), row.Data.(*view.DistributionData).CountPerBucket[i], "\n")
 			} else {
 				formattedData = fmt.Sprint(formattedData, metricName, rowData, ", quantile=", fmt.Sprintf(`"%f"}`, bucket), row.Data.(*view.DistributionData).CountPerBucket[i], "\n")
 			}
