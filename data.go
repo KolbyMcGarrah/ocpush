@@ -49,6 +49,8 @@ func buildRequest(rows []*view.Row, v *view.View) *RequestData {
 		}
 	}
 
+	request.Metric = reqMetric
+
 	return request
 }
 
