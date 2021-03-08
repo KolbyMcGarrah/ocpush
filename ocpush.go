@@ -3,6 +3,7 @@ package ocpush
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -70,27 +71,24 @@ func (pe *PushExporter) PushMetrics() {
 	// push metrics for each view registered to the Meter
 	for _, view := range pe.views {
 		rows, err := pe.Meter.RetrieveData(view.Name)
-		fmt.Println(rows)
 		if err != nil || len(rows) < 1 {
 			continue
 		}
-		metricName := fmt.Sprint(pe.namespace, "_", view.Name)
-		helpString := fmt.Sprint("#HELP ", metricName, " ", view.Description, "\n")
-		typeString := fmt.Sprint("#TYPE ", metricName, " ", getType(view.Aggregation.Type), "\n")
-		reqData := fmt.Sprint(helpString, typeString)
-		for _, row := range rows {
-			reqData = fmt.Sprint(reqData, metricName, formatRowData(row, view), "\n")
-		}
-		fmt.Println(reqData)
-		if pe.isTest {
-			fmt.Print(reqData)
-			continue
-		}
-		req, err := http.NewRequest(http.MethodPost, pe.buildURLString(), bytes.NewBuffer([]byte(reqData)))
+		reqData := buildRequest(rows, view)
+		jsonRequest, err := json.Marshal(reqData)
 		if err != nil {
 			continue
 		}
-		req.Header.Set("Content-Type", "plain/text; charset=utf-8")
+		if pe.isTest {
+			fmt.Print(jsonRequest)
+			continue
+		}
+		fmt.Println(jsonRequest)
+		req, err := http.NewRequest(http.MethodPost, pe.buildURLString(), bytes.NewBuffer([]byte(jsonRequest)))
+		if err != nil {
+			continue
+		}
+		req.Header.Set("Content-Type", `application/json; schema=”prometheus/telemetry”; version=”0.0.2`)
 		_, err = client.Do(req)
 		if err != nil {
 			continue
